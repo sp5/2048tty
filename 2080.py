@@ -44,10 +44,10 @@ class WrapperRev:
         self.l = l
 
     def __getitem__(self, i):
-        return l[len(l) - i - 1]
+        return self.l[len(self.l) - i - 1]
 
     def __setitem__(self, i, n):
-        l[len(l) - i - 1] = n
+        self.l[len(self.l) - i - 1] = n
 
     def __iter__(self):
         i = 0
