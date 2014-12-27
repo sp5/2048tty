@@ -1,4 +1,5 @@
-import blessings, math, random
+import curses, blessings
+import math, random
 from grid import Grid
 
 class Cell:
@@ -36,11 +37,11 @@ def center(n, string):
 
 def addrand(grid):
     triples = [triple for triple in grid.triples if not triple.v]
-    if len(triples) > 3:
-        triples = random.sample(triples, 3)
+    if len(triples) > 1:
+        triples = random.sample(triples, 1)
 
     for triple in triples:
-        grid[triple[0], triple[1]] = Cell(1)
+        grid[triple[0], triple[1]] = Cell(random.sample([1, 1, 1, 2], 1)[0])
 
 class WrapperRev:
     def __init__(self, l):
@@ -79,37 +80,39 @@ def pushrow(r):
 def main():
     t = blessings.Terminal()
     grid = Grid(x=4, y=4)
+    stdscr = curses.initscr()
+    curses.cbreak()
 
-    with t.fullscreen():
-        tx = input("?")
-        while not tx.startswith("q"):
+    tx = chr(stdscr.getch())
+    while not tx.startswith("q"):
 
-            if tx.startswith('l'):
-                for row in grid.rows:
-                    pushrow(row)
-            elif tx.startswith('r'):
-                for row in grid.rows:
-                    pushrow(WrapperRev(row))
-            elif tx.startswith('u'):
-                for col in grid.cols:
-                    pushrow(col)
-            elif tx.startswith('d'):
-                for col in grid.cols:
-                    pushrow(WrapperRev(col))
-            elif tx.startswith('!'):
-                import pdb; pdb.set_trace()
+        if tx.startswith('h'):
+            for row in grid.rows:
+                pushrow(row)
+        elif tx.startswith('l'):
+            for row in grid.rows:
+                pushrow(WrapperRev(row))
+        elif tx.startswith('k'):
+            for col in grid.cols:
+                pushrow(col)
+        elif tx.startswith('j'):
+            for col in grid.cols:
+                pushrow(WrapperRev(col))
+        elif tx.startswith('!'):
+            import pdb; pdb.set_trace()
 
-            addrand(grid)
-            t.stream.write("\x1b[2J\x1b[H")
-            for trip in grid.triples:
-                if trip.v:
-                    trip.v.render(t, 2+trip.y*4, 2+trip.x*7)
+        addrand(grid)
+        t.stream.write("\x1b[2J\x1b[H")
+        for trip in grid.triples:
+            if trip.v:
+                trip.v.render(t, 2+trip.y*4, 2+trip.x*7)
 
-            for i, row in enumerate(grid.rows):
-                with t.location(x=30, y=2+i):
-                    print(repr(row))
+        for i, row in enumerate(grid.rows):
+            with t.location(x=30, y=2+i):
+                print(repr(row))
 
-            tx = input("?")
+        tx = chr(stdscr.getch())
+    curses.endwin()
 
 if __name__ == '__main__':
     main()
