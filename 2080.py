@@ -58,14 +58,6 @@ class WrapperRev:
     def __len__(self):
         return len(self.l)
 
-def pushr(grid):
-    for row in grid.rows:
-        pushrow(WrapperRev(row))
-
-def pushl(grid):
-    for row in grid.rows:
-        pushrow(row)
-
 def pushrow(r):
     new = []
     for i, c in enumerate(r):
@@ -84,9 +76,17 @@ def main():
         while not tx.startswith("q"):
 
             if tx.startswith('l'):
-                pushl(grid)
+                for row in grid.rows:
+                    pushrow(row)
             elif tx.startswith('r'):
-                pushr(grid)
+                for row in grid.rows:
+                    pushrow(WrapperRev(row))
+            elif tx.startswith('u'):
+                for col in grid.cols:
+                    pushrow(col)
+            elif tx.startswith('d'):
+                for col in grid.cols:
+                    pushrow(WrapperRev(col))
             elif tx.startswith('g'):
                 addrand(grid, p)
                 p += 1
