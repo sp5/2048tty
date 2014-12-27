@@ -22,6 +22,9 @@ class Cell:
     def __repr__(self):
         return "Cell({0})".format(self.power)
 
+    def __eq__(self, other):
+        return self.power == other.power
+
 def center(n, string):
     s = str(string)
     l = len(s)
@@ -31,13 +34,13 @@ def center(n, string):
     pr = math.ceil(p / 2)
     return "".join((" " * pl, s, " " * pr))
 
-def addrand(grid, n):
+def addrand(grid):
     triples = [triple for triple in grid.triples if not triple.v]
     if len(triples) > 3:
         triples = random.sample(triples, 3)
 
     for triple in triples:
-        grid[triple[0], triple[1]] = Cell(n)
+        grid[triple[0], triple[1]] = Cell(1)
 
 class WrapperRev:
     def __init__(self, l):
@@ -62,7 +65,10 @@ def pushrow(r):
     new = []
     for i, c in enumerate(r):
         if c is not None:
-            new.append(c)
+            if new and c == new[-1]:
+                new[-1] = Cell(c.power + 1)
+            else:
+                new.append(c)
     for i in range(len(r)):
         r[i] = new[i] if i < len(new) else None
 
@@ -71,7 +77,6 @@ def main():
     grid = Grid(x=4, y=4)
 
     with t.fullscreen():
-        p = 1
         tx = input("?")
         while not tx.startswith("q"):
 
@@ -88,8 +93,7 @@ def main():
                 for col in grid.cols:
                     pushrow(WrapperRev(col))
             elif tx.startswith('g'):
-                addrand(grid, p)
-                p += 1
+                addrand(grid)
             elif tx.startswith('!'):
                 import pdb; pdb.set_trace()
 
