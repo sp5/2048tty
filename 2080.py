@@ -63,12 +63,16 @@ class WrapperRev:
 
 def pushrow(r):
     new = []
+    previously_combined = False
     for i, c in enumerate(r):
         if c is not None:
-            if new and c == new[-1]:
+            if new and (not previously_combined) and c == new[-1]:
                 new[-1] = Cell(c.power + 1)
+                previously_combined = True
             else:
                 new.append(c)
+                previously_combined = False
+
     for i in range(len(r)):
         r[i] = new[i] if i < len(new) else None
 
@@ -92,11 +96,10 @@ def main():
             elif tx.startswith('d'):
                 for col in grid.cols:
                     pushrow(WrapperRev(col))
-            elif tx.startswith('g'):
-                addrand(grid)
             elif tx.startswith('!'):
                 import pdb; pdb.set_trace()
 
+            addrand(grid)
             t.stream.write("\x1b[2J\x1b[H")
             for trip in grid.triples:
                 if trip.v:
