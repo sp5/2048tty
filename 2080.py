@@ -81,7 +81,7 @@ def main():
     with t.fullscreen():
         p = 1
         tx = input("?")
-        while not tx.startswith("exit"):
+        while not tx.startswith("q"):
 
             if tx.startswith('l'):
                 pushl(grid)
