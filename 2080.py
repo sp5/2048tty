@@ -1,5 +1,6 @@
+#!/usr/bin/python3
+import math, random, sys
 import curses, blessings
-import math, random
 from grid import Grid
 
 class Cell:
@@ -8,7 +9,7 @@ class Cell:
 
     def render(self, t, y, x):
         color = ([t.default, t.white, t.cyan, t.blue, t.magenta, t.red]
-                [self.power - 1] if self.power < 7 else t.yellow)
+            [self.power - 1] if self.power < 7 else t.yellow)
         def c(a):
             t.stream.write(color + a + t.normal)
         with t.location(y=y, x=x):
@@ -79,9 +80,27 @@ def pushrow(r):
 
 def main():
     t = blessings.Terminal()
+    for arg in sys.argv:
+        if arg in ['-h', '--help']:
+            print("""{b}2048{n}
+Implementation in python by Samuel Phillips <samuel.phillips29@gmail.com>
+Based on 2048 by Gabriele Cirulli. <gabrielecirulli.com>
+To play:
+    Use hjkl to push the tiles:
+              ^
+        < {b}h j k l{n} >
+            v
+
+    The objective is to combine tiles to form a 2048 tile.
+    Press {b}q{n} to quit.
+    {b}!{n} will start a Python debugger.""".format(
+        b=t.bold, n=t.normal))
+            sys.exit(0)
+
     grid = Grid(x=4, y=4)
     stdscr = curses.initscr()
     curses.cbreak()
+    debug = False
 
     tx = chr(stdscr.getch())
     while not tx.startswith("q"):
@@ -89,28 +108,35 @@ def main():
         if tx.startswith('h'):
             for row in grid.rows:
                 pushrow(row)
+            addrand(grid)
         elif tx.startswith('l'):
             for row in grid.rows:
                 pushrow(WrapperRev(row))
+            addrand(grid)
         elif tx.startswith('k'):
             for col in grid.cols:
                 pushrow(col)
+            addrand(grid)
         elif tx.startswith('j'):
             for col in grid.cols:
                 pushrow(WrapperRev(col))
+            addrand(grid)
+        elif tx.startswith('d'):
+            debug = not debug
         elif tx.startswith('!'):
             import pdb; pdb.set_trace()
 
-        addrand(grid)
         t.stream.write("\x1b[2J\x1b[H")
         for trip in grid.triples:
             if trip.v:
                 trip.v.render(t, 2+trip.y*4, 2+trip.x*7)
 
-        for i, row in enumerate(grid.rows):
-            with t.location(x=30, y=2+i):
-                print(repr(row))
+        if debug:
+            for i, row in enumerate(grid.rows):
+                with t.location(x=30, y=2+i):
+                    print(repr(row))
 
+        print()
         tx = chr(stdscr.getch())
     curses.endwin()
 
