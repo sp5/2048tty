@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 import math, random, sys
-import blessings
+import render
 from grid import Grid
-from getch import getch
 import ani
 
 class Cell:
@@ -12,8 +11,7 @@ class Cell:
     def render(self, t, y, x):
         color = ([t.default, t.white, t.cyan, t.blue, t.magenta, t.red]
             [self.power - 1] if self.power < 7 else t.yellow)
-        def c(a):
-            t.stream.write(color + a + t.normal)
+        def c(a): t.write(a, c=color)
         with t.location(y=y, x=x):
             c(" ____ ")
         with t.location(y=y + 1, x=x):
@@ -93,7 +91,7 @@ def pushrow(r, cbase, cstep, anims):
         return True
 
 def main():
-    t = blessings.Terminal()
+    t = render.Terminal()
     for arg in sys.argv:
         if arg in ['-h', '--help']:
             print("""{b}2048{n}
@@ -123,74 +121,74 @@ To play:
     stepy = tilesiz * ani.cj
     tl = ani.Coord(2, 2)
     anims = None
-    with t.hidden_cursor():
-        with t.fullscreen():
-            while not tx.startswith("q"):
+    while not tx.startswith("q"):
+        t.clear()
+        for trip in grid.triples:
+            if trip.v:
+                trip.v.render(t, 2+trip.y*4, 2+trip.x*7)
 
-                t.stream.write("\x1b[2J\x1b[H")
-                for trip in grid.triples:
-                    if trip.v:
-                        trip.v.render(t, 2+trip.y*4, 2+trip.x*7)
+        if debug:
+            for i, row in enumerate(grid.rows):
+                t.write(repr(row), at=ani.Coord(30, 2+i))
+            for i, anim in enumerate(anims):
+                t.write(repr(anim), at=ani.Coord(30, 3+len(grid.rows)+i))
+            ic = tl + tilesiz * inspect
+            t.write('#', at=ic, c=t.red)
+            t.write(repr(ic), at=ani.Coord(30, 3+len(grid.rows)+len(anims)))
 
-                if debug:
-                    for i, row in enumerate(grid.rows):
-                        with t.location(x=30, y=2+i):
-                            print(repr(row))
-                    for i, anim in enumerate(anims):
-                        with t.location(x=30, y=3+len(grid.rows)+i):
-                            print(repr(anim))
-                    ic = tl + tilesiz * inspect
-                    with t.location(x=ic.x, y=ic.y):
-                        t.stream.write(t.red('#'))
-                    with t.location(x=30, y=3+len(grid.rows)+len(anims)):
-                        print(repr(ic))
+        t.go()
+        anims = []
+        tx = t.getch()
+        if tx.startswith('h'):
+            ok = []
+            for i, row in enumerate(grid.rows):
+                ok.append(pushrow(row, tl + stepy * i, stepx, anims))
+            if any(ok): addrand(grid, anims)
+        elif tx.startswith('l'):
+            ok = []
+            for i, row in enumerate(grid.rows):
+                ok.append(pushrow(
+                            WrapperRev(row),
+                            tl + stepy*i + stepx*len(grid.rows) - stepx,
+                            -stepx, anims))
+            if any(ok): addrand(grid, anims)
+        elif tx.startswith('k'):
+            ok = []
+            for i, col in enumerate(grid.cols):
+                ok.append(pushrow(col, tl + stepx * i, stepy, anims))
+            if any(ok): addrand(grid, anims)
+        elif tx.startswith('j'):
+            ok = []
+            for i, col in enumerate(grid.cols):
+                ok.append(pushrow(
+                            WrapperRev(col),
+                            tl + stepx*i + stepy*len(grid.cols) - stepy,
+                            -stepy, anims))
+            if any(ok): addrand(grid, anims)
+        elif tx.startswith('d'):
+            debug = not debug
+        elif tx.startswith('!'):
+            import pdb
+            with t.location():
+                t.c.curs_set(1)
+                t.c.nocbreak()
+                t.s.keypad(False)
+                pdb.set_trace()
+                t.s.keypad(True)
+                t.c.cbreak()
+                t.c.curs_set(0)
+        elif debug:
+            if tx.startswith('H'):
+                inspect -= ani.ci
+            elif tx.startswith('L'):
+                inspect += ani.ci
+            elif tx.startswith('K'):
+                inspect -= ani.cj
+            elif tx.startswith('J'):
+                inspect += ani.cj
 
-                print()
-                anims = []
-                tx = getch()
-                if tx.startswith('h'):
-                    ok = []
-                    for i, row in enumerate(grid.rows):
-                        ok.append(pushrow(row, tl + stepy * i, stepx, anims))
-                    if any(ok): addrand(grid, anims)
-                elif tx.startswith('l'):
-                    ok = []
-                    for i, row in enumerate(grid.rows):
-                        ok.append(pushrow(
-                                    WrapperRev(row),
-                                    tl + stepy*i + stepx*len(grid.rows) - stepx,
-                                    -stepx, anims))
-                    if any(ok): addrand(grid, anims)
-                elif tx.startswith('k'):
-                    ok = []
-                    for i, col in enumerate(grid.cols):
-                        ok.append(pushrow(col, tl + stepx * i, stepy, anims))
-                    if any(ok): addrand(grid, anims)
-                elif tx.startswith('j'):
-                    ok = []
-                    for i, col in enumerate(grid.cols):
-                        ok.append(pushrow(
-                                    WrapperRev(col),
-                                    tl + stepx*i + stepy*len(grid.cols) - stepy,
-                                    -stepy, anims))
-                    if any(ok): addrand(grid, anims)
-                elif tx.startswith('d'):
-                    debug = not debug
-                elif tx.startswith('!'):
-                    import pdb
-                    with t.location(x=0, y=(tl+4*tilesiz).y):
-                        pdb.set_trace()
-                elif debug:
-                    if tx.startswith('H'):
-                        inspect -= ani.ci
-                    elif tx.startswith('L'):
-                        inspect += ani.ci
-                    elif tx.startswith('K'):
-                        inspect -= ani.cj
-                    elif tx.startswith('J'):
-                        inspect += ani.cj
-
-                ani.play(t, .01, anims)
+        ani.play(t, .01, anims)
+    t.done()
 
 if __name__ == '__main__':
     main()

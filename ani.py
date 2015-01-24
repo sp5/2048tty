@@ -63,6 +63,9 @@ class Coord:
     def astuple(self):
         return self.x, self.y
 
+    def rtuple(self):
+        return self.y, self.x
+
     def compare(self, o, direction):
         return (
                 (self.x - o.x) * direction.x >= 0
@@ -130,10 +133,10 @@ def play(t, delay, _animations):
                 animations.remove(animation)
             else:
                 animation.step()
-        t.stream.write("\x1b[2J\x1b[H")
+        t.clear()
         for animation in _animations:
             animation.render(t)
-        t.stream.write("\n")
+        t.go()
 
 ci = Coord(1, 0)
 cj = Coord(0, 1)
