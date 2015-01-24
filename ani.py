@@ -70,7 +70,7 @@ class Coord:
         return (
                 (self.x - o.x) * direction.x >= 0
                ) and (
-                (self.y - o.y) * direction.x >= 0
+                (self.y - o.y) * direction.y >= 0
                )
 
 class Animation:
