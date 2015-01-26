@@ -42,7 +42,7 @@ def addrand(grid, anims):
         triples = random.sample(triples, 1)
 
     for triple in triples:
-        c = Cell(random.sample([1, 1, 1, 2], 1)[0])
+        c = Cell(random.sample([1, 1, 1, 1, 1, 1, 1, 1, 1, 2], 1)[0])
         anims.insert(0, ani.TileSpawn(c, ani.Coord(2+triple.x*7, 2+triple.y*4)))
         grid[triple[0], triple[1]] = c
 
