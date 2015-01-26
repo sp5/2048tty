@@ -79,3 +79,6 @@ class Terminal:
     def getch(self):
         return self.s.getkey()
 
+    def input_flush(self):
+        curses.flushinp()
+

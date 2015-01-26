@@ -199,6 +199,7 @@ To play:
             elif tx.startswith('J'):
                 inspect += ani.cj
 
+        t.input_flush()
         ani.play(t, animationrate, anims)
     t.done()
 
