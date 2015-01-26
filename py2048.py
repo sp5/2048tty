@@ -92,8 +92,12 @@ def pushrow(r, cbase, cstep, anims):
 
 def main():
     t = render.Terminal()
+    animationrate = .009
     for arg in sys.argv:
         if arg in ['-h', '--help']:
+            t.done()
+            import blessings
+            t = blessings.Terminal()
             print("""{b}2048{n}
 Implementation in python by Samuel Phillips <samuel.phillips29@gmail.com>
 Based on 2048 by Gabriele Cirulli. <gabrielecirulli.com>
@@ -105,9 +109,17 @@ To play:
 
     The objective is to combine tiles to form a 2048 tile.
     Press {b}q{n} to quit.
-    {b}!{n} will start a Python debugger.""".format(
-        b=t.bold, n=t.normal))
+    {b}!{n} will start a Python debugger.
+    Use -A{u}xxx{n} or --animrate{u}xxx{n} to speed up or slow down the
+    animations. The default rate is {animrate}.
+    """.format(
+        b=t.bold, n=t.normal, u=t.underline, animrate=animationrate))
             sys.exit(0)
+        elif arg.startswith('-A'):
+            animationrate = float(arg[2:])
+        elif arg.startswith('--animrate'):
+            animationrate = float(arg[len('--animrate'):])
+
 
     grid = Grid(x=4, y=4)
     debug = False
@@ -187,7 +199,7 @@ To play:
             elif tx.startswith('J'):
                 inspect += ani.cj
 
-        ani.play(t, .01, anims)
+        ani.play(t, animationrate, anims)
     t.done()
 
 if __name__ == '__main__':
