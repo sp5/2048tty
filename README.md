@@ -9,6 +9,6 @@ An implementation of [Gabriele Cirrulli's 2048](http://git.io/2048) that outputs
 
 ![Screenshot of the game in action](/screenshot.png?raw=true "Screenshot")
 
-Use `sudo make install` to install it.
+Use `sudo make install` to install it. Use `2048tty -h` for instructions.
 
 
