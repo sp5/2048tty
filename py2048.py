@@ -2,7 +2,7 @@
 import math, random, sys
 import render
 from grid import Grid
-import ani
+import ani, scorecard
 
 class Cell:
     def __init__(self, power):
@@ -90,8 +90,7 @@ def pushrow(r, cbase, cstep, anims):
             r[i] = new[i] if i < len(new) else None
         return True
 
-def main():
-    t = render.Terminal()
+def main(t):
     animationrate = .009
     for arg in sys.argv:
         if arg in ['-h', '--help']:
@@ -135,10 +134,14 @@ To play:
     anims = None
     while not tx.startswith("q"):
         t.clear()
+# main grid
         for trip in grid.triples:
             if trip.v:
                 trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
-
+# score card
+        scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 0),
+                120, 350)
+# debug
         if debug:
             for i, row in enumerate(grid.rows):
                 t.write(repr(row), at=ani.Coord(30, 2+i))
@@ -148,9 +151,14 @@ To play:
             t.write('#', at=ic, c=t.red)
             t.write(repr(ic), at=ani.Coord(30, 3+len(grid.rows)+len(anims)))
 
+# refresh screen
         t.go()
-        anims = []
+# we always want the scorecard animation
+        anims = [scorecard.ScoreCardAnim(12,
+            tl + tilesiz * ani.ci * 4 + ani.Coord(10, 0), 120, 350)]
+# get & process input
         tx = t.getch()
+    # movement
         if tx.startswith('h'):
             ok = []
             for i, row in enumerate(grid.rows):
@@ -177,8 +185,10 @@ To play:
                             tl + stepx*i + stepy*len(grid.cols) - stepy,
                             -stepy, anims))
             if any(ok): addrand(grid, anims)
+    # debug mode
         elif tx.startswith('d'):
             debug = not debug
+    # start pdb if things are really bad
         elif tx.startswith('!'):
             import pdb
             with t.location():
@@ -190,6 +200,7 @@ To play:
                 t.c.cbreak()
                 t.c.curs_set(0)
         elif debug:
+    # move location indicator
             if tx.startswith('H'):
                 inspect -= ani.ci
             elif tx.startswith('L'):
@@ -199,9 +210,14 @@ To play:
             elif tx.startswith('J'):
                 inspect += ani.cj
 
+# don't want any suprise motions
         t.input_flush()
+
         ani.play(t, animationrate, anims)
-    t.done()
 
 if __name__ == '__main__':
-    main()
+    t = render.Terminal()
+    try:
+        main(t)
+    finally:
+        t.done()

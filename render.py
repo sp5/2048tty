@@ -37,19 +37,16 @@ class Terminal:
         self.s.keypad(True)
         curses.curs_set(0)
         self.default = 0
+
         ci = curses.init_pair
-        ci(1, c.WHITE, -1)
-        self.white = curses.color_pair(1)
-        ci(2, c.CYAN, -1)
-        self.cyan = curses.color_pair(2)
-        ci(3, c.BLUE, -1)
-        self.blue = curses.color_pair(3)
-        ci(4, c.MAGENTA, -1)
-        self.magenta = curses.color_pair(4)
-        ci(5, c.RED, -1)
-        self.red = curses.color_pair(5)
-        ci(6, c.YELLOW, -1)
-        self.yellow = curses.color_pair(6)
+        cp = curses.color_pair
+        ci(1, c.WHITE, -1);   self.white   = cp(1)
+        ci(2, c.CYAN, -1);    self.cyan    = cp(2)
+        ci(3, c.BLUE, -1);    self.blue    = cp(3)
+        ci(4, c.MAGENTA, -1); self.magenta = cp(4)
+        ci(5, c.RED, -1);     self.red     = cp(5)
+        ci(6, c.YELLOW, -1);  self.yellow  = cp(6)
+        ci(7, c.WHITE, c.BLACK);self.sboxc = cp(7) # score box color
 
         self.pos_stack = []
 
