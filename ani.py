@@ -86,7 +86,7 @@ class TileMove(Animation):
         self.cell = cell
 
     def render(self, t):
-        self.cell.render(t, self.curr.y, self.curr.x)
+        self.cell.render(t, self.curr)
 
     def step(self):
         self.curr += self._step
@@ -106,8 +106,8 @@ class TileSpawn(Animation):
 
     def render(self, t):
         self.cell.render(
-                t, self.pos.y + (-1,0,1,0,0)[self.stage],
-                self.pos.x + (0,-1,0,1,0)[self.stage])
+                t, Coord(self.pos.x + (0,-1,0,1,0)[self.stage],
+                self.pos.y + (-1,0,1,0,0)[self.stage]))
 
     def step(self):
         self.stage += 1

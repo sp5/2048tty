@@ -8,17 +8,17 @@ class Cell:
     def __init__(self, power):
         self.power = power
 
-    def render(self, t, y, x):
+    def render(self, t, coord):
         color = ([t.default, t.white, t.cyan, t.blue, t.magenta, t.red]
             [self.power - 1] if self.power < 7 else t.yellow)
         def c(a): t.write(a, c=color)
-        with t.location(y=y, x=x):
+        with t.location(y=coord.y, x=coord.x):
             c(" ____ ")
-        with t.location(y=y + 1, x=x):
+        with t.location(y=coord.y + 1, x=coord.x):
             c("/    \\")
-        with t.location(y=y + 2, x=x):
+        with t.location(y=coord.y + 2, x=coord.x):
             c("\u258c{0}\u2590".format(center(4, 2 ** self.power)))
-        with t.location(y=y + 3, x=x):
+        with t.location(y=coord.y + 3, x=coord.x):
             c("\\____/")
 
     def __repr__(self):
@@ -137,7 +137,7 @@ To play:
         t.clear()
         for trip in grid.triples:
             if trip.v:
-                trip.v.render(t, 2+trip.y*4, 2+trip.x*7)
+                trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
 
         if debug:
             for i, row in enumerate(grid.rows):
