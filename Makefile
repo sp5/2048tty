@@ -3,7 +3,7 @@
 INSTALL := /usr/local/lib/2048tty
 EXECUTABLE := /usr/local/bin/2048tty
 
-install: render.py py2048.py ani.py grid.py getch.py
+install: render.py py2048.py ani.py grid.py getch.py scorecard.py persist.py
 	if [ -e $(INSTALL) -o -e $(EXECUTABLE) ]; \
 	then \
 		echo 'Error: Resources already exist at $(INSTALL) or $(EXECUTABLE).';\
