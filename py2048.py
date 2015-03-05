@@ -172,6 +172,15 @@ To play:
     won_already = False
     while not tx.startswith("q"):
         t.clear()
+# main grid
+        for trip in grid.triples:
+            if trip.v:
+                trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
+# score card
+        score.diff = 0
+        scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
+                score.score, score.hiscore)
+# check practical state
         winlose = get_practical_state(grid)
         if winlose == 1 and not won_already:
             won_already = True
@@ -189,15 +198,6 @@ To play:
             t.popup("YOU LOST", right="press any key to quit",
                     bgcolor=t.c.COLOR_WHITE)
             break
-
-# main grid
-        for trip in grid.triples:
-            if trip.v:
-                trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
-# score card
-        score.diff = 0
-        scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
-                score.score, score.hiscore)
 # debug
         if debug:
             for i, row in enumerate(grid.rows):
