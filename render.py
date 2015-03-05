@@ -36,6 +36,7 @@ class Terminal:
         curses.cbreak()
         self.s.keypad(True)
         curses.curs_set(0)
+        curses.noecho()
         self.default = 0
 
         ci = curses.init_pair
@@ -54,6 +55,7 @@ class Terminal:
         curses.curs_set(1)
         self.s.keypad(False)
         curses.nocbreak()
+        curses.echo()
         curses.endwin()
 
     def go(self):

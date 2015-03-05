@@ -5,6 +5,8 @@ from grid import Grid
 import ani, scorecard
 import persist
 
+class EndOfGame(Exception): pass
+
 class Cell:
     def __init__(self, power):
         self.power = power
@@ -98,6 +100,24 @@ class Score:
         self.hiscore = hiscore
         self.diff = 0
 
+def get_practical_state(grid):
+    for triple in grid.triples:
+        if triple.v == Cell(11):
+            return 1
+    for triple in grid.triples:
+        if triple.v == None:
+            return 0
+    
+    for row in grid.rows:
+        for i in range(3):
+            if row[i] == row[i+1]:
+                return 0
+    for col in grid.cols:
+        for i in range(3):
+            if col[i] == col[i+1]:
+                return 0
+    return -1
+
 def main(t, per):
     animationrate = .009
     for arg in sys.argv:
@@ -144,9 +164,40 @@ To play:
     tl = ani.Coord(2, 2)
     anims = None
     score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
-    hiscore = 0
+    won_already = False
     while not tx.startswith("q"):
         t.clear()
+        winlose = get_practical_state(grid)
+        t.write(str(winlose), at=ani.Coord(0,0))
+        if winlose == 1 and not won_already:
+            won_already = True
+            for i in range(t.c.LINES//2 -5, t.c.LINES//2 + 5):
+                t.write("#" * t.c.COLS, at=ani.cj * i, c=t.yellow)
+            msg = "...YOU WON!..."
+            t.write(msg, at=ani.Coord((t.c.COLS - len(msg))//2, t.c.LINES//2-1))
+            t.write("press c to continue", at=ani.cj * (t.c.LINES//2 + 3))
+            msg = "press q to quit"
+            t.write(msg, at=ani.Coord(t.c.COLS - len(msg), t.c.LINES//2 + 3))
+            while True:
+                k = t.getch()
+                if k.startswith('c'):
+                    tx == '_'
+                    break
+                elif k.startswith('q'):
+                    per["hiscore"] = max(per["hiscore"], score.hiscore)
+                    raise EndOfGame()
+            continue
+
+        elif winlose == -1:
+            for i in range(t.c.LINES//2 -5, t.c.LINES//2 + 5):
+                t.write("#" * t.c.COLS, at=ani.cj * i, c=t.red)
+            msg = "...YOU LOST..."
+            t.write(msg, at=ani.Coord((t.c.COLS - len(msg))//2, t.c.LINES//2-1))
+            msg = "press any key to quit"
+            t.write(msg, at=ani.Coord(t.c.COLS - len(msg), t.c.LINES//2 + 3))
+            t.getch()
+            break
+
 # main grid
         for trip in grid.triples:
             if trip.v:
@@ -222,6 +273,8 @@ To play:
                 inspect -= ani.cj
             elif tx.startswith('J'):
                 inspect += ani.cj
+            elif tx.isdigit():
+                grid[inspect.x, inspect.y] = Cell(int(tx))
         score.score += score.diff
         score.hiscore = max(score.score, score.hiscore)
         anims.append(scorecard.ScoreCardAnim(
@@ -239,6 +292,8 @@ if __name__ == '__main__':
     t = render.Terminal()
     try:
         main(t, per)
+    except EndOfGame:
+        pass
     finally:
         t.done()
         per.finish()
