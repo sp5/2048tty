@@ -173,7 +173,6 @@ To play:
     while not tx.startswith("q"):
         t.clear()
         winlose = get_practical_state(grid)
-        t.write(str(winlose), at=ani.Coord(0,0))
         if winlose == 1 and not won_already:
             won_already = True
             k = t.popup("YOU WON!",
