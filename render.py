@@ -99,7 +99,6 @@ class Terminal:
         self.s.refresh()
 
     def write(self, tx, at=None, c=None):
-        print("Write {0} {1}".format(tx, at), file=sys.stderr)
         if c is None:
             c = curses.color_pair(0)
         if at:
