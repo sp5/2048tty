@@ -176,32 +176,19 @@ To play:
         t.write(str(winlose), at=ani.Coord(0,0))
         if winlose == 1 and not won_already:
             won_already = True
-            for i in range(t.c.LINES//2 -5, t.c.LINES//2 + 5):
-                t.write("#" * t.c.COLS, at=ani.cj * i, c=t.yellow)
-            msg = "...YOU WON!..."
-            t.write(msg, at=ani.Coord((t.c.COLS - len(msg))//2, t.c.LINES//2-1))
-            t.write("press c to continue", at=ani.cj * (t.c.LINES//2 + 3))
-            msg = "press q to quit"
-            t.write(msg, at=ani.Coord(t.c.COLS - len(msg), t.c.LINES//2 + 3))
-            while True:
-                k = t.getch()
-                if k.startswith('c'):
-                    tx == '_'
-                    break
-                elif k.startswith('q'):
-                    per["hiscore"] = max(per["hiscore"], score.hiscore)
-                    del per["savegame"]
-                    raise EndOfGame()
-            continue
+            k = t.popup("YOU WON!",
+                    left="press c to continue", right="press q to quit",
+                    accept="cq")
+            if k == 'c':
+                continue
+            elif k == 'q':
+                per["hiscore"] = max(per["hiscore"], score.hiscore)
+                del per["savegame"]
+                raise EndOfGame()
 
         elif winlose == -1:
-            for i in range(t.c.LINES//2 -5, t.c.LINES//2 + 5):
-                t.write("#" * t.c.COLS, at=ani.cj * i, c=t.red)
-            msg = "...YOU LOST..."
-            t.write(msg, at=ani.Coord((t.c.COLS - len(msg))//2, t.c.LINES//2-1))
-            msg = "press any key to quit"
-            t.write(msg, at=ani.Coord(t.c.COLS - len(msg), t.c.LINES//2 + 3))
-            t.getch()
+            t.popup("YOU LOST", right="press any key to quit",
+                    bgcolor=t.c.COLOR_WHITE)
             break
 
 # main grid
@@ -257,17 +244,9 @@ To play:
             if any(ok): addrand(grid, anims)
     # quit w/o saveing
         elif tx.startswith('x'):
-            for i in range(t.c.LINES//2 -5, t.c.LINES//2 + 5):
-                t.write("#" * t.c.COLS, at=ani.cj * i, c=t.magenta)
-            msg = "Are you sure you want to quit and clear the board?"
-            t.write(msg,
-                at=ani.Coord((t.c.COLS - len(msg))//2, t.c.LINES//2-1),
-                c=t.yellow)
-            msg = "press y to confirm"
-            t.write(msg,
-                at=ani.Coord(t.c.COLS - len(msg), t.c.LINES//2 + 3),
-                c=t.yellow)
-            if t.getch().startswith('y'):
+            k = t.popup("Are you sure you want to quit and clear the board?",
+                    right="press y to confirm", bgcolor=t.c.COLOR_MAGENTA)
+            if k == 'y':
                 del per["savegame"]
                 raise EndOfGame()
     # debug mode

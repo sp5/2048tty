@@ -1,12 +1,13 @@
+import sys
 import curses
 import ani
 
 class All:
     def __init__(self): pass
     def __eq__(self, other):
-        return True
+        return not (other in 'hjkl')
     def __contains__(self, other):
-        return True
+        return not (other in 'hjkl')
 
 ALL = All()
 
@@ -60,23 +61,26 @@ class Terminal:
 
         self.pos_stack = []
 
-    def popup(self, heading, bgcolor=curses.COLOR_YELLOW, fgcolor=-1,
+    def popup(self, heading,
+            bgcolor=curses.COLOR_YELLOW, fgcolor=curses.COLOR_BLACK,
             left="", right="", accept=ALL):
         curses.init_pair(8, fgcolor, bgcolor)
         mycolor = curses.color_pair(8)
-        for i in range(curses.LINES - 4, curses.LINES):
-            self.write(" " * curses.COLS, at=ani.cj * i, c=mycolor)
+        for i in range(curses.LINES - 5, curses.LINES):
+            for j in range(curses.COLS):
+                self.s.insch(i, j, " ", mycolor)
         self.write(heading,
                 at=ani.Coord(
-                    curses.LINES - 3,
-                    (curses.COLS - len(heading)) // 2),
+                    (curses.COLS - len(heading)) // 2,
+                    curses.LINES - 3),
                 c=mycolor)
         self.write(left, at=ani.cj * (curses.LINES - 1), c=mycolor)
-        self.write(right,
+        self.write(right[:-1],
                 at=ani.Coord(
-                    curses.LINES - 1,
-                    curses.COLS - len(right)),
+                    curses.COLS - len(right),
+                    curses.LINES - 1),
                 c=mycolor)
+        self.s.insch(curses.LINES - 1, curses.COLS - 1, right[-1], mycolor)
         while True:
             k = self.getch()
             if k in accept:
@@ -95,6 +99,7 @@ class Terminal:
         self.s.refresh()
 
     def write(self, tx, at=None, c=None):
+        print("Write {0} {1}".format(tx, at), file=sys.stderr)
         if c is None:
             c = curses.color_pair(0)
         if at:
