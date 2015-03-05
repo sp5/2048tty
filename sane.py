@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+# fixes problems when the game crashes hard and screws up the terminal
+# Not needed much now that a finally block is being used
 import curses
 
 curses.initscr()
