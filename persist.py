@@ -23,6 +23,13 @@ class Persister:
 
     def __setitem__(self, item, value):
         self.data[item] = value
+    
+    def __delitem__(self, item):
+        if item in self.data:
+            del self.data[item]
+
+    def __contains__(self, item):
+        return item in self.data
 
     def finish(self):
         with open(self.persistfile, 'w') as f:

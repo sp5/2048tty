@@ -151,12 +151,17 @@ To play:
             animationrate = float(arg[len('--animrate'):])
 
 
-    grid = Grid(x=4, y=4)
     debug = False
     inspect = ani.Coord(0, 0)
 
-    addrand(grid, [])
-    addrand(grid, [])
+    grid = Grid(x=4, y=4)
+    if "savegame" in per:
+        for i, row in enumerate(per["savegame"]):
+            for j, cell in enumerate(row):
+                grid[j,i] = Cell(cell) if cell else None
+    else:
+        addrand(grid, [])
+        addrand(grid, [])
     tx = '_'
     tilesiz = ani.Coord(7, 4)
     stepx = tilesiz * ani.ci
@@ -185,6 +190,7 @@ To play:
                     break
                 elif k.startswith('q'):
                     per["hiscore"] = max(per["hiscore"], score.hiscore)
+                    del per["savegame"]
                     raise EndOfGame()
             continue
 
@@ -249,6 +255,21 @@ To play:
                             tl + stepx*i + stepy*len(grid.cols) - stepy,
                             -stepy, anims, score))
             if any(ok): addrand(grid, anims)
+    # quit w/o saveing
+        elif tx.startswith('x'):
+            for i in range(t.c.LINES//2 -5, t.c.LINES//2 + 5):
+                t.write("#" * t.c.COLS, at=ani.cj * i, c=t.magenta)
+            msg = "Are you sure you want to quit and clear the board?"
+            t.write(msg,
+                at=ani.Coord((t.c.COLS - len(msg))//2, t.c.LINES//2-1),
+                c=t.yellow)
+            msg = "press y to confirm"
+            t.write(msg,
+                at=ani.Coord(t.c.COLS - len(msg), t.c.LINES//2 + 3),
+                c=t.yellow)
+            if t.getch().startswith('y'):
+                del per["savegame"]
+                raise EndOfGame()
     # debug mode
         elif tx.startswith('d'):
             debug = not debug
@@ -286,6 +307,11 @@ To play:
 
         ani.play(t, animationrate, anims)
     per["hiscore"] = max(per["hiscore"], score.hiscore)
+    if get_practical_state(grid) == 0:
+        per["savegame"] = [
+                [c.power if c else None for c in r] for r in grid.rows]
+    else:
+        del per["savegame"]
 
 if __name__ == '__main__':
     per = persist.Persister()
