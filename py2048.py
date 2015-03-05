@@ -3,6 +3,7 @@ import math, random, sys
 import render
 from grid import Grid
 import ani, scorecard
+import persist
 
 class Cell:
     def __init__(self, power):
@@ -65,7 +66,7 @@ class WrapperRev:
     def __len__(self):
         return len(self.l)
 
-def pushrow(r, cbase, cstep, anims):
+def pushrow(r, cbase, cstep, anims, score):
     new = []
     previously_combined = False
     for i, c in enumerate(r):
@@ -75,6 +76,7 @@ def pushrow(r, cbase, cstep, anims):
                     c, cbase + i * cstep,
                     cbase + (len(new)-1) * cstep))
                 new[-1] = Cell(c.power + 1)
+                score.diff += 2 ** (c.power + 1)
                 previously_combined = True
             else:
                 anims.append(ani.TileMove(
@@ -90,7 +92,13 @@ def pushrow(r, cbase, cstep, anims):
             r[i] = new[i] if i < len(new) else None
         return True
 
-def main(t):
+class Score:
+    def __init__(self, score=0, hiscore=0):
+        self.score = score
+        self.hiscore = hiscore
+        self.diff = 0
+
+def main(t, per):
     animationrate = .009
     for arg in sys.argv:
         if arg in ['-h', '--help']:
@@ -111,6 +119,9 @@ To play:
     {b}!{n} will start a Python debugger.
     Use -A{u}xxx{n} or --animrate{u}xxx{n} to speed up or slow down the
     animations. The default rate is {animrate}.
+
+    The game's high score is soted in ~/.2048tty by default. You can change
+    this location be setting the 2048TTY_FILE environment varible.
     """.format(
         b=t.bold, n=t.normal, u=t.underline, animrate=animationrate))
             sys.exit(0)
@@ -132,6 +143,8 @@ To play:
     stepy = tilesiz * ani.cj
     tl = ani.Coord(2, 2)
     anims = None
+    score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
+    hiscore = 0
     while not tx.startswith("q"):
         t.clear()
 # main grid
@@ -139,8 +152,9 @@ To play:
             if trip.v:
                 trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
 # score card
-        scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 0),
-                120, 350)
+        score.diff = 0
+        scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
+                score.score, score.hiscore)
 # debug
         if debug:
             for i, row in enumerate(grid.rows):
@@ -153,16 +167,15 @@ To play:
 
 # refresh screen
         t.go()
-# we always want the scorecard animation
-        anims = [scorecard.ScoreCardAnim(12,
-            tl + tilesiz * ani.ci * 4 + ani.Coord(10, 0), 120, 350)]
+# clear anims
+        anims = []
 # get & process input
         tx = t.getch()
     # movement
         if tx.startswith('h'):
             ok = []
             for i, row in enumerate(grid.rows):
-                ok.append(pushrow(row, tl + stepy * i, stepx, anims))
+                ok.append(pushrow(row, tl + stepy * i, stepx, anims, score))
             if any(ok): addrand(grid, anims)
         elif tx.startswith('l'):
             ok = []
@@ -170,12 +183,12 @@ To play:
                 ok.append(pushrow(
                             WrapperRev(row),
                             tl + stepy*i + stepx*len(grid.rows) - stepx,
-                            -stepx, anims))
+                            -stepx, anims, score))
             if any(ok): addrand(grid, anims)
         elif tx.startswith('k'):
             ok = []
             for i, col in enumerate(grid.cols):
-                ok.append(pushrow(col, tl + stepx * i, stepy, anims))
+                ok.append(pushrow(col, tl + stepx * i, stepy, anims, score))
             if any(ok): addrand(grid, anims)
         elif tx.startswith('j'):
             ok = []
@@ -183,7 +196,7 @@ To play:
                 ok.append(pushrow(
                             WrapperRev(col),
                             tl + stepx*i + stepy*len(grid.cols) - stepy,
-                            -stepy, anims))
+                            -stepy, anims, score))
             if any(ok): addrand(grid, anims)
     # debug mode
         elif tx.startswith('d'):
@@ -209,15 +222,23 @@ To play:
                 inspect -= ani.cj
             elif tx.startswith('J'):
                 inspect += ani.cj
-
+        score.score += score.diff
+        score.hiscore = max(score.score, score.hiscore)
+        anims.append(scorecard.ScoreCardAnim(
+                score.diff,
+                tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
+                score.score, score.hiscore))
 # don't want any suprise motions
         t.input_flush()
 
         ani.play(t, animationrate, anims)
+    per["hiscore"] = max(per["hiscore"], score.hiscore)
 
 if __name__ == '__main__':
+    per = persist.Persister()
     t = render.Terminal()
     try:
-        main(t)
+        main(t, per)
     finally:
         t.done()
+        per.finish()

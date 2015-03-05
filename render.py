@@ -63,7 +63,7 @@ class Terminal:
         if c is None:
             c = curses.color_pair(0)
         if at:
-            self.s.addstr(at.y, at.x, tx, c)
+            self.s.addstr(int(at.y), int(at.x), tx, c)
         else:
             self.s.addstr(tx, c)
 

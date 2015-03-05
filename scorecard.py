@@ -1,6 +1,8 @@
+import sys
 import render
 import ani
 def draw(t, pos, score, highscore):
+#   print("Scorecard draw at {0}".format(pos), file=sys.stderr)
     t.write("-Score----", at=pos + ani.Coord(0, 0), c=t.sboxc)
     t.write(         "|", at=pos + ani.Coord(9, 1), c=t.sboxc)
     t.write("|"         , at=pos + ani.Coord(0, 1), c=t.sboxc)
@@ -15,7 +17,7 @@ def draw(t, pos, score, highscore):
 class ScoreCardAnim(ani.Animation):
     def __init__(self, diff, pos, *args, **kwargs):
         self.pos = pos
-        self.dpos = pos - ani.cj # position of +12, etc.
+        self.dpos = pos + ani.Coord(1, 2) # position of +12, etc.
         self.diff = "+{}".format(diff) if diff > 0 else None
         self.args = args
         self.kwargs = kwargs
@@ -23,13 +25,15 @@ class ScoreCardAnim(ani.Animation):
     def render(self, t):
         draw(t, self.pos, *self.args, **self.kwargs)
         if self.diff:
+#           print("Writing at {0}".format(self.dpos), file=sys.stderr)
             t.write(self.diff, at=self.dpos, c=t.magenta)
 
     def step(self):
-        self.dpos -= ani.cj
+        self.dpos -= ani.cj * .25
 
     def done(self):
-        return True
+        return  self.dpos.y < self.pos.y - 1 if self.diff else True
 
     def __repr__(self):
-        return "ani.ScoreCardAnim({0}, {1})".format(self.args, self.kwargs)
+        return "ani.ScoreCardAnim({0}, {1} <{2}>)".format(
+                self.args, self.kwargs, self.dpos)
