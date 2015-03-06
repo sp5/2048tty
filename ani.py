@@ -79,13 +79,14 @@ class Animation:
     pass
 
 class TileMove(Animation):
-    def __init__(self, cell, start, end):
+    def __init__(self, cell, start, end, merge=False):
         self.start = start # info only
         diff = end - start
         self._step = diff.maxstep(1)
         self.curr = start
         self.end = end
-        self.cell = cell
+        self.cell = copy(cell) if merge else cell
+        self.ismerge = merge 
 
     def render(self, t):
         self.cell.render(t, self.curr)
@@ -94,7 +95,12 @@ class TileMove(Animation):
         self.curr += self._step
 
     def done(self):
-        return self.curr.compare(self.end, self._step)
+        if self.curr.compare(self.end, self._step):
+            if self.ismerge:
+                self.cell.power += 1
+            return True
+        else:
+            return False
 
     def __repr__(self):
         return "ani.TileMove({0}, {1}, {2})".format(

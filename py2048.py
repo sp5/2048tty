@@ -88,7 +88,8 @@ def pushrow(r, cbase, cstep, anims, score):
             if new and (not previously_combined) and c == new[-1]:
                 anims.append(ani.TileMove(
                     c, cbase + i * cstep,
-                    cbase + (len(new)-1) * cstep))
+                    cbase + (len(new)-1) * cstep,
+                    merge=True))
                 new[-1] = Cell(c.power + 1)
                 score.diff += 2 ** (c.power + 1)
                 previously_combined = True
@@ -171,9 +172,11 @@ To play:
         for i, row in enumerate(per["savegame"]):
             for j, cell in enumerate(row):
                 grid[j,i] = Cell(cell) if cell else None
+        won_already = get_practical_state(grid)
     else:
         addrand(grid, [])
         addrand(grid, [])
+        won_already = False
     tx = '_'
     tilesiz = ani.Coord(7, 4)
     stepx = tilesiz * ani.ci
@@ -181,7 +184,6 @@ To play:
     tl = ani.Coord(2, 2)
     anims = None
     score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
-    won_already = False
     while not tx.startswith("q"):
         t.clear()
 # main grid
