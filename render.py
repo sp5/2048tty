@@ -13,6 +13,8 @@ ALL = All()
 
 class INeedColorBadly(Exception):
     pass
+class RenderingError(Exception):
+    pass
 
 class Kuler:
     def __getattr__(self, attr):
@@ -99,12 +101,20 @@ class Terminal:
         self.s.refresh()
 
     def write(self, tx, at=None, c=None):
-        if c is None:
-            c = curses.color_pair(0)
-        if at:
-            self.s.addstr(int(at.y), int(at.x), tx, c)
-        else:
-            self.s.addstr(tx, c)
+        try:
+            if c is None:
+                c = curses.color_pair(0)
+            if at:
+                self.s.addstr(int(at.y), int(at.x), tx, c)
+            else:
+                self.s.addstr(tx, c)
+        except curses.error:
+            raise RenderingError(
+                "Failed to write {what} to {where} using {d}color{cl}".format(
+                    what=repr(tx),
+                    where=at if at else "cursor", 
+                    d="" if c else "default ",
+                    cl=(" " + repr(c)) if c else ""))
 
     def location(self, x=0, y=0):
         return Mover(self.pos_stack, self.s, ani.Coord(x,y))

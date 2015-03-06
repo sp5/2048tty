@@ -11,18 +11,30 @@ class Cell:
     def __init__(self, power):
         self.power = power
 
+    def get_color(self, t):
+        colors = [t.red, t.default, t.white, t.cyan, t.blue, t.magenta, t.red]
+        if self.power < 7:
+            return colors[self.power]
+        else:
+            return t.yellow
+
     def render(self, t, coord):
-        color = ([t.default, t.white, t.cyan, t.blue, t.magenta, t.red]
-            [self.power - 1] if self.power < 7 else t.yellow)
-        def c(a): t.write(a, c=color)
-        with t.location(y=coord.y, x=coord.x):
-            c(" ____ ")
-        with t.location(y=coord.y + 1, x=coord.x):
-            c("/    \\")
-        with t.location(y=coord.y + 2, x=coord.x):
-            c("\u258c{0}\u2590".format(center(4, 2 ** self.power)))
-        with t.location(y=coord.y + 3, x=coord.x):
-            c("\\____/")
+        _coord = coord
+        def c(a, **kw):
+            t.write(a, c=self.get_color(t), **kw)
+        c(" ____ ", at=coord)
+        coord += ani.cj
+        c("/    \\", at=coord)
+        coord += ani.cj
+        c("\u258c    \u2590".format(center(4, 2 ** self.power)), at=coord)
+        self.write_number_only(t, _coord)
+        coord += ani.cj
+        c("\\____/", at=coord)
+    def write_number_only(self, t, coord, truncate=False):
+        text = center(4, 2 ** self.power)
+        if truncate:
+            text = text[1:-1]
+        t.write(text, at=coord + ani.Coord(1, 2), c=self.get_color(t))
 
     def __repr__(self):
         return "Cell({0})".format(self.power)

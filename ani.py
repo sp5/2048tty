@@ -1,5 +1,7 @@
 import time
 from copy import copy
+import sys
+import re
 
 class Coord:
     def __init__(self, x, y):
@@ -99,21 +101,90 @@ class TileMove(Animation):
                 repr(self.cell), self.start, self.end)
 
 class TileSpawn(Animation):
+    frames = [
+        " ____ \n" +
+        "/    \\\n" +
+        "▌####▐\n" +
+        "\\____/",
+
+        " ____ \n" +
+        "/    *\n" +
+        "▌####▐\n" +
+        "*____/",
+
+        " ____ \n" +
+        "*    *\n" +
+        "▌####▐\n" +
+        "*____*",
+
+        " ____ \n" +
+        "*   **\n" +
+        "▌####▐\n" +
+        "**___*",
+
+        "   _  \n" +
+        "*** **\n" +
+        "▌####▐\n" +
+        "**_***",
+
+        "      \n" +
+        " **** \n" +
+        "*###**\n" +
+        " **** ",
+
+        "      \n" +
+        "  *** \n" +
+        "***#**\n" +
+        " ***  ",
+
+        "      \n" +
+        "  **  \n" +
+        "******\n" +
+        "  **  ",
+
+        "      \n" +
+        "   *  \n" +
+        " **** \n" +
+        "  *   ",
+
+        "      \n" +
+        "      \n" +
+        " **** \n" +
+        "      ",
+
+        "      \n" +
+        "      \n" +
+        "  **  \n" +
+        "      "]
+
     def __init__(self, cell, pos):
         self.pos = pos
-        self.stage = 0
+        self.stage = len(self.frames)
         self.cell = cell
 
     def render(self, t):
-        self.cell.render(
-                t, Coord(self.pos.x + (0,-1,0,1,0)[self.stage],
-                self.pos.y + (-1,0,1,0,0)[self.stage]))
+        if self.stage < 0:
+            self.cell.render(t, self.pos)
+        elif self.stage < len(self.frames):
+            pos = self.pos
+            color = self.cell.get_color(t)
+            frame = self.frames[self.stage]
+            self.cell.write_number_only(t, self.pos)
+            for line in frame.split('\n'):
+                m = re.match(r"(.*?)(#+)(.*)$", line)
+                if m:
+                    t.write(m.group(1), at=pos, c=color)
+                    t.write(m.group(3),
+                            at=pos + ci * (len(m.group(2)) + 1), c=color)
+                else:
+                    t.write(line, at=pos, c=color)
+                pos += cj
 
     def step(self):
-        self.stage += 1
+        self.stage -= 1
 
     def done(self):
-        return self.stage >= 4
+        return self.stage < 0
 
     def __repr__(self):
         return "ani.TileSpawn({0}, {1})".format(
