@@ -115,20 +115,21 @@ class Terminal:
                                 tx[-1], c)
                         tx = tx[:-1]
                     self.s.addstr(int(at.y), int(at.x), tx, c)
-                else:
-                    print("{}{}".format(
-                        at, ssize), file=sys.stderr)
+#               else:
+#                   print("{}{}".format(
+#                       at, ssize), file=sys.stderr)
             else:
                 self.s.addstr(tx, c)
         except curses.error:
-            print("Failed to write | {what} |to| {where} |using| {d}color{cl}|. |{ss}|."
-                    .format(
-                    what=repr(tx),
-                    where=at if at else "cursor", 
-                    d="" if c else "default ",
-                    cl=(" " + repr(c)) if c else "",
-                    ss=self.screen_size()),
-                    file=sys.stderr)
+            pass # Just ignore it, I guess.
+#           print("Failed to write | {what} |to| {where} |using| {d}color{cl}|. |{ss}|."
+#                   .format(
+#                   what=repr(tx),
+#                   where=at if at else "cursor", 
+#                   d="" if c else "default ",
+#                   cl=(" " + repr(c)) if c else "",
+#                   ss=self.screen_size()),
+#                   file=sys.stderr)
 #           raise RenderingError(
 #               "Failed to write {what} to {where} using {d}color{cl}".format(
 #                   what=repr(tx),
