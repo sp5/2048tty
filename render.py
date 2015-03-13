@@ -66,23 +66,24 @@ class Terminal:
     def popup(self, heading,
             bgcolor=curses.COLOR_YELLOW, fgcolor=curses.COLOR_BLACK,
             left="", right="", accept=ALL):
+        ssize = self.screen_size()
         curses.init_pair(8, fgcolor, bgcolor)
         mycolor = curses.color_pair(8)
-        for i in range(curses.LINES - 5, curses.LINES):
-            for j in range(curses.COLS):
+        for i in range(ssize.y - 5, ssize.y):
+            for j in range(ssize.x):
                 self.s.insch(i, j, " ", mycolor)
         self.write(heading,
                 at=ani.Coord(
-                    (curses.COLS - len(heading)) // 2,
-                    curses.LINES - 3),
+                    (ssize.x - len(heading)) // 2,
+                    ssize.y - 3),
                 c=mycolor)
-        self.write(left, at=ani.cj * (curses.LINES - 1), c=mycolor)
+        self.write(left, at=ani.cj * (ssize.y - 1), c=mycolor)
         self.write(right[:-1],
                 at=ani.Coord(
-                    curses.COLS - len(right),
-                    curses.LINES - 1),
+                    ssize.x - len(right),
+                    ssize.y - 1),
                 c=mycolor)
-        self.s.insch(curses.LINES - 1, curses.COLS - 1, right[-1], mycolor)
+        self.s.insch(ssize.y - 1, ssize.x - 1, right[-1], mycolor)
         while True:
             k = self.getch()
             if k in accept:
@@ -105,16 +106,35 @@ class Terminal:
             if c is None:
                 c = curses.color_pair(0)
             if at:
-                self.s.addstr(int(at.y), int(at.x), tx, c)
+                ssize = self.screen_size()
+                if ani.origin <= at < ssize:
+                    if len(tx) > ssize.x - at.x:
+                        tx = tx[:ssize.x - at.x]
+                    if len(tx) == ssize.x and at.y == ssize.y - 1:
+                        self.s.insch(ssize.y - 1, ssize.x - 1,
+                                tx[-1], c)
+                        tx = tx[:-1]
+                    self.s.addstr(int(at.y), int(at.x), tx, c)
+                else:
+                    print("{}{}".format(
+                        at, ssize), file=sys.stderr)
             else:
                 self.s.addstr(tx, c)
         except curses.error:
-            raise RenderingError(
-                "Failed to write {what} to {where} using {d}color{cl}".format(
+            print("Failed to write | {what} |to| {where} |using| {d}color{cl}|. |{ss}|."
+                    .format(
                     what=repr(tx),
                     where=at if at else "cursor", 
                     d="" if c else "default ",
-                    cl=(" " + repr(c)) if c else ""))
+                    cl=(" " + repr(c)) if c else "",
+                    ss=self.screen_size()),
+                    file=sys.stderr)
+#           raise RenderingError(
+#               "Failed to write {what} to {where} using {d}color{cl}".format(
+#                   what=repr(tx),
+#                   where=at if at else "cursor", 
+#                   d="" if c else "default ",
+#                   cl=(" " + repr(c)) if c else ""))
 
     def location(self, x=0, y=0):
         return Mover(self.pos_stack, self.s, ani.Coord(x,y))
@@ -127,4 +147,8 @@ class Terminal:
 
     def input_flush(self):
         curses.flushinp()
+
+    def screen_size(self):
+        y, x = self.s.getmaxyx()
+        return ani.Coord(x, y)
 

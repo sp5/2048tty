@@ -75,6 +75,15 @@ class Coord:
                 (self.y - o.y) * direction.y >= 0
                )
 
+    def __lt__(self, o): return self.x < o.x and self.y < o.y
+    def __le__(self, o): return self.x <= o.x and self.y <= o.y
+    def __eq__(self, o): return self.x == o.x and self.y == o.y
+    def __ne__(self, o): return self.x != o.x and self.y != o.y
+    def __gt__(self, o): return self.x > o.x and self.y > o.y
+    def __ge__(self, o): return self.x >= o.x and self.y >= o.y
+       
+
+
 class Animation:
     pass
 
@@ -217,3 +226,4 @@ def play(t, delay, _animations):
 
 ci = Coord(1, 0)
 cj = Coord(0, 1)
+origin = Coord(0, 0)
