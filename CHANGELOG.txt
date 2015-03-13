@@ -1,2 +1,3 @@
 1.0:
 + Added changelog.
+* Fixed behavior when resizing the screen.
