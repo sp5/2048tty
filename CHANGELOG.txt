@@ -1,3 +1,5 @@
 1.0:
 + Added changelog.
++ Improved animations
 * Fixed behavior when resizing the screen.
+
