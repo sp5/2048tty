@@ -7,7 +7,12 @@ class All:
     def __eq__(self, other):
         return not (other in 'hjkl')
     def __contains__(self, other):
-        return not (other in 'hjkl')
+        if other in 'hjkl':
+            return False
+        elif other == curses.KEY_RESIZE:
+            return False
+        else:
+            return True
 
 ALL = All()
 
@@ -66,28 +71,33 @@ class Terminal:
     def popup(self, heading,
             bgcolor=curses.COLOR_YELLOW, fgcolor=curses.COLOR_BLACK,
             left="", right="", accept=ALL):
-        ssize = self.screen_size()
-        curses.init_pair(8, fgcolor, bgcolor)
-        mycolor = curses.color_pair(8)
-        for i in range(ssize.y - 5, ssize.y):
-            for j in range(ssize.x):
-                self.s.insch(i, j, " ", mycolor)
-        self.write(heading,
-                at=ani.Coord(
-                    (ssize.x - len(heading)) // 2,
-                    ssize.y - 3),
-                c=mycolor)
-        self.write(left, at=ani.cj * (ssize.y - 1), c=mycolor)
-        self.write(right[:-1],
-                at=ani.Coord(
-                    ssize.x - len(right),
-                    ssize.y - 1),
-                c=mycolor)
-        self.s.insch(ssize.y - 1, ssize.x - 1, right[-1], mycolor)
+        def internal():
+            ssize = self.screen_size()
+            curses.init_pair(8, fgcolor, bgcolor)
+            mycolor = curses.color_pair(8)
+            for i in range(ssize.y - 5, ssize.y):
+                for j in range(ssize.x):
+                    self.s.insch(i, j, " ", mycolor)
+            self.write(heading,
+                    at=ani.Coord(
+                        (ssize.x - len(heading)) // 2,
+                        ssize.y - 3),
+                    c=mycolor)
+            self.write(left, at=ani.cj * (ssize.y - 1), c=mycolor)
+            self.write(right[:-1],
+                    at=ani.Coord(
+                        ssize.x - len(right),
+                        ssize.y - 1),
+                    c=mycolor)
+            self.s.insch(ssize.y - 1, ssize.x - 1, right[-1], mycolor)
+        internal()
         while True:
             k = self.getch()
+            self.write("BTW its "+repr(k), at=ani.origin)
             if k in accept:
                 return k
+            elif k == curses.KEY_RESIZE:
+                internal()
 
 
 
