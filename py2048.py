@@ -167,12 +167,15 @@ To play:
     debug = False
     inspect = ani.Coord(0, 0)
 
+    score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
     grid = Grid(x=4, y=4)
     if "savegame" in per:
         for i, row in enumerate(per["savegame"]):
             for j, cell in enumerate(row):
                 grid[j,i] = Cell(cell) if cell else None
         won_already = get_practical_state(grid)
+        if "score" in per:
+            score.score = per["score"]
     else:
         addrand(grid, [])
         addrand(grid, [])
@@ -183,7 +186,6 @@ To play:
     stepy = tilesiz * ani.cj
     tl = ani.Coord(2, 2)
     anims = None
-    score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
     while not tx.startswith("q"):
         t.clear()
 # main grid
@@ -206,6 +208,7 @@ To play:
             elif k == 'q':
                 per["hiscore"] = max(per["hiscore"], score.hiscore)
                 del per["savegame"]
+                del per["score"]
                 raise EndOfGame()
 
         elif winlose == -1:
@@ -261,6 +264,7 @@ To play:
                     right="press y to confirm", bgcolor=t.c.COLOR_MAGENTA)
             if k == 'y':
                 del per["savegame"]
+                del per["score"]
                 raise EndOfGame()
     # debug mode
         elif tx.startswith('d'):
@@ -302,8 +306,10 @@ To play:
     if get_practical_state(grid) == 0:
         per["savegame"] = [
                 [c.power if c else None for c in r] for r in grid.rows]
+        per["score"] = score.score
     else:
         del per["savegame"]
+        del per["score"]
 
 if __name__ == '__main__':
     per = persist.Persister()

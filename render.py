@@ -93,7 +93,6 @@ class Terminal:
         internal()
         while True:
             k = self.getch()
-            self.write("BTW its "+repr(k), at=ani.origin)
             if k in accept:
                 return k
             elif k == curses.KEY_RESIZE:

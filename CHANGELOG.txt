@@ -2,4 +2,5 @@
 + Added changelog.
 + Improved animations
 * Fixed behavior when resizing the screen.
+- Fixed bug where score would be lost after saving.
 
