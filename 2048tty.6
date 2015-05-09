@@ -5,9 +5,9 @@
 .SH NAME
 2048tty \- an implementation of 2048 in the terminal
 .SH SYNOPSIS
-.B 2048tty [-h] [-A
+.B 2048tty [-h] [-A\c
 .I rate
-.B | --animrate
+.B | --animrate\c
 .I rate
 .B ]
 
@@ -27,8 +27,27 @@ out of debug mode, simply press 'd' a second time.
 Print useful help information.
 .IP "-A --animrate"
 Sets to delay between animation ticks, in seconds. The default is 0.009. Note
-that the number must be stuck to the end of the option, not seperated by a
+that the number must be stuck to the end of the option, not separated by a
 space.
+.SH KEYS
+.IP h
+Push all tiles left.
+.IP j
+Push all tiles down.
+.IP k
+Push all tiles up.
+.IP l
+Push all tiles right.
+.IP d
+Toggle debug mode.
+.IP x
+Quit and delete save data.
+.IP "H, J, K, L"
+Move debug cursor left, down, up, and right, respectively. Active only in
+debug mode.
+.IP "1, 2, 3, 4, 5, 6, 7, 8, 9"
+Replace the selected tile with one of the given power. Active only in debug
+mode.
 .SH FILES
 .I ~/.2048tty
 .RS
@@ -40,8 +59,6 @@ If non-null the path that will be used in place of
 .I ~/.2048tty
 \.
 .SH BUGS
-The current score is not saved with the rest of the game. Specifically, if
-you restart the game, the tiles will be preserved, but your current score will
-reset to zero.
+The game will not save if closed with ^C or SIGTERM.
 .SH AUTHOR
-Samuel Phillips <samuel.phillips29 at gmail dot com>
+Samuel Phillips <sam at samuelphillips dot net>
