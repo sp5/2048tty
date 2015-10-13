@@ -1,0 +1,3 @@
+language: python
+for: self
+description: Python clone of 2048
