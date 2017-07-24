@@ -115,7 +115,7 @@ class Score:
 
 def get_practical_state(grid):
     for triple in grid.triples:
-        if triple.v.power >= 11:
+        if triple.v and triple.v.power >= 11:
             return 1
     for triple in grid.triples:
         if triple.v == None:
