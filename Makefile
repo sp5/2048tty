@@ -14,7 +14,8 @@ install: render.py py2048.py ani.py grid.py getch.py scorecard.py \
 		echo '       might be using these locations.';\
 		exit 2;\
 	fi
-	mkdir $(INSTALL)
+	mkdir -p $(INSTALL)
+	mkdir -p $(basename $(MANDEST))
 	cp -t $(INSTALL) $^
 	ln -s $(INSTALL)/py2048.py $(EXECUTABLE) 
 	ln -s $(INSTALL)/$(MANPAGE) $(MANDEST)
