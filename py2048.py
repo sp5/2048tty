@@ -5,6 +5,9 @@ from grid import Grid
 import ani, scorecard
 import persist
 
+GAME_WIDTH = 4
+GAME_HEIGHT = 4
+
 class EndOfGame(Exception): pass
 
 class Cell:
@@ -122,11 +125,11 @@ def get_practical_state(grid):
             return 0
     
     for row in grid.rows:
-        for i in range(3):
+        for i in range(len(row) - 1):
             if row[i] == row[i+1]:
                 return 0
     for col in grid.cols:
-        for i in range(3):
+        for i in range(len(col) - 1):
             if col[i] == col[i+1]:
                 return 0
     return -1
@@ -168,7 +171,7 @@ To play:
     inspect = ani.Coord(0, 0)
 
     score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
-    grid = Grid(x=4, y=4)
+    grid = Grid(x=GAME_WIDTH, y=GAME_HEIGHT)
     if "savegame" in per:
         for i, row in enumerate(per["savegame"]):
             for j, cell in enumerate(row):
