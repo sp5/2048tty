@@ -112,6 +112,12 @@ def pushrow(r, cbase, cstep, anims, score):
             r[i] = new[i] if i < len(new) else None
         return True
 
+def pushrowv2(row, cbase, cstep):
+    anims = []
+    score = Score()
+    moved_any = pushrow(row, cbase, cstep, anims, score)
+    return moved_any, score.diff, anims
+
 class Score:
     def __init__(self, score=0, hiscore=0):
         self.score = score
@@ -147,42 +153,78 @@ class Game:
         self.readargs(t)
 
         self.grid = Grid(x=GAME_WIDTH, y=GAME_HEIGHT)
+        self.tilesiz = ani.Coord(7, 4)
+        self.stepx = self.tilesiz * ani.ci
+        self.stepy = self.tilesiz * ani.cj
+        self.tl = ani.Coord(2, 2)
 
     def run(self, t):
         return self.main(t)
 
+    LEFT = 0x00
+    RIGHT = 0x01
+    UP = 0x10
+    DOWN = 0x11
+
+    def push(self, direction):
+        rev = direction in (self.RIGHT, self.DOWN)
+        vert = direction in (self.UP, self.DOWN)
+
+        if vert:
+            s0, s1 = self.stepx, self.stepy
+            rows = self.grid.cols
+        else:
+            s0, s1 = self.stepy, self.stepx
+            rows = self.grid.rows
+
+        ok = []
+        anims = []
+        newscore = 0
+        for i, row in enumerate(rows):
+            if rev:
+                cbase = self.tl + s0*i + s1*len(rows) - s1
+                cstep = -s1
+                row = WrapperRev(row)
+            else:
+                cbase = self.tl + s0 * i
+                cstep = s1
+
+            moved_any, upscore, newanims = pushrowv2(row, cbase, cstep)
+            ok.append(moved_any)
+            newscore += upscore
+            anims.extend(newanims)
+
+        return any(ok), newscore, anims
 
     def main(self, t):
         per = self.per
 
-        score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
+        score_local   = 0
+        score_hiscore = per["hiscore"]
         if "savegame" in per:
             for i, row in enumerate(per["savegame"]):
                 for j, cell in enumerate(row):
                     self.grid[j,i] = Cell(cell) if cell else None
             won_already = post_win(self.grid)
             if "score" in per:
-                score.score = per["score"]
+                score_local = per["score"]
         else:
             addrand(self.grid, [])
             addrand(self.grid, [])
             won_already = False
         tx = '_'
-        tilesiz = ani.Coord(7, 4)
-        stepx = tilesiz * ani.ci
-        stepy = tilesiz * ani.cj
-        tl = ani.Coord(2, 2)
         anims = None
         while not tx.startswith("q"):
             t.clear()
             # main grid
             for trip in self.grid.triples:
                 if trip.v:
-                    trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
+                    trip.v.render(t, self.tl +
+                            self.tilesiz * ani.Coord(trip.x, trip.y))
             # score card
-            score.diff = 0
-            scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
-                    score.score, score.hiscore)
+            score_diff = 0
+            scorecard.draw(t, self.tl + self.tilesiz * ani.ci * 4 +
+                    ani.Coord(10, 5), score_local, score_hiscore)
             # check if the game was won on the last turn
             if post_win(self.grid) and not won_already:
                 won_already = True
@@ -192,7 +234,7 @@ class Game:
                 if k == 'c':
                     continue
                 elif k == 'q':
-                    per["hiscore"] = max(per["hiscore"], score.hiscore)
+                    per["hiscore"] = max(per["hiscore"], score_hiscore)
                     del per["savegame"]
                     del per["score"]
                     raise EndOfGame()
@@ -208,7 +250,7 @@ class Game:
                 for i, anim in enumerate(anims):
                     t.write(repr(anim), at=ani.Coord(30,
                         3 + len(self.grid.rows) + i))
-                ic = tl + tilesiz * self.inspect
+                ic = self.tl + self.tilesiz * self.inspect
                 t.write('#', at=ic, c=t.red)
                 t.write(repr(ic), at=ani.Coord(30,
                     3 + len(self.grid.rows) + len(anims)))
@@ -221,33 +263,25 @@ class Game:
             tx = t.getch()
             # movement
             if tx.startswith('h'):
-                ok = []
-                for i, row in enumerate(self.grid.rows):
-                    ok.append(pushrow(row, tl + stepy * i, stepx, anims, score))
-                if any(ok): addrand(self.grid, anims)
+                ok, upscore, newanims = self.push(self.LEFT)
+                anims.extend(newanims)
+                score_diff += upscore
+                if ok: addrand(self.grid, anims)
             elif tx.startswith('l'):
-                ok = []
-                for i, row in enumerate(self.grid.rows):
-                    ok.append(pushrow(
-                                WrapperRev(row),
-                                tl + stepy*i + stepx*len(self.grid.rows) -
-                                    stepx,
-                                -stepx, anims, score))
-                if any(ok): addrand(self.grid, anims)
+                ok, upscore, newanims = self.push(self.RIGHT)
+                anims.extend(newanims)
+                score_diff += upscore
+                if ok: addrand(self.grid, anims)
             elif tx.startswith('k'):
-                ok = []
-                for i, col in enumerate(self.grid.cols):
-                    ok.append(pushrow(col, tl + stepx * i, stepy, anims, score))
-                if any(ok): addrand(self.grid, anims)
+                ok, upscore, newanims = self.push(self.UP)
+                anims.extend(newanims)
+                score_diff += upscore
+                if ok: addrand(self.grid, anims)
             elif tx.startswith('j'):
-                ok = []
-                for i, col in enumerate(self.grid.cols):
-                    ok.append(pushrow(
-                                WrapperRev(col),
-                                tl + stepx*i + stepy*len(self.grid.cols) -
-                                    stepy,
-                                -stepy, anims, score))
-                if any(ok): addrand(self.grid, anims)
+                ok, upscore, newanims = self.push(self.DOWN)
+                anims.extend(newanims)
+                score_diff += upscore
+                if ok: addrand(self.grid, anims)
             # quit w/o saveing
             elif tx.startswith('x'):
                 k = t.popup(
@@ -283,21 +317,21 @@ class Game:
                     self.inspect += ani.cj
                 elif tx.isdigit():
                     self.grid[self.inspect.x, self.inspect.y] = Cell(int(tx))
-            score.score += score.diff
-            score.hiscore = max(score.score, score.hiscore)
+            score_local += score_diff
+            score_hiscore = max(score_local, score_hiscore)
             anims.append(scorecard.ScoreCardAnim(
-                    score.diff,
-                    tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
-                    score.score, score.hiscore))
+                    score_diff,
+                    self.tl + self.tilesiz * ani.ci * 4 + ani.Coord(10, 5),
+                    score_local, score_hiscore))
             # don't want any suprise motions
             t.input_flush()
 
             ani.play(t, self.animationrate, anims)
-        per["hiscore"] = max(per["hiscore"], score.hiscore)
+        per["hiscore"] = max(per["hiscore"], score_hiscore)
         if moves_possible(self.grid):
             per["savegame"] = [
                     [c.power if c else None for c in r] for r in self.grid.rows]
-            per["score"] = score.score
+            per["score"] = score_local
         else:
             del per["savegame"]
             del per["score"]
