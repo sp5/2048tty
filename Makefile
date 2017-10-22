@@ -1,4 +1,4 @@
-.PHONY: install uninstall tags
+.PHONY: install uninstall tags test
 
 INSTALL := /usr/local/lib/2048tty
 EXECUTABLE := /usr/local/bin/2048tty
@@ -28,3 +28,6 @@ uninstall:
 
 tags:
 	ctags --python-kinds=-i -R *
+
+test:
+	./tests.py
