@@ -43,5 +43,46 @@ class PushRowTests(unittest.TestCase):
         self.assertEqual(score.diff, 4)
         self.assertEqual(len(anims), 3)
 
+class PracticalStateTests(unittest.TestCase):
+    def test_moves_possible(self):
+        grid = mkgrid(
+                None, None, None, None,
+                4,    5,    None, None,
+                None, 1,    None, 2,
+                None, None, 4,    None)
+        self.assertTrue(py2048.moves_possible(grid))
+        grid = mkgrid(
+                1, 2, 1, 2,
+                2, 1, 2, 1,
+                1, 2, 1, 2,
+                3, 3, 2, 1)
+        self.assertTrue(py2048.moves_possible(grid))
+        grid = mkgrid(
+                1, 2, 1, 2,
+                2, 1, 2, 1,
+                1, 2, 1, 2,
+                2, 1, 2, 1)
+        self.assertFalse(py2048.moves_possible(grid))
+
+    def test_post_win(self):
+        grid = mkgrid(
+                1, 2, 1, 2,
+                2, 1, 2, 1,
+                1, 2, 1, 2,
+                3, 3, 2, 1)
+        self.assertFalse(py2048.post_win(grid))
+        grid = mkgrid(
+                1, 2, 1, 2,
+                2, 1, 2, 11,
+                1, 2, 1, 2,
+                3, 3, 2, 1)
+        self.assertTrue(py2048.post_win(grid))
+        grid = mkgrid(
+                1, 2, 1, 2,
+                2, 1, 2, 12,
+                1, 2, 1, 2,
+                3, 3, 2, 1)
+        self.assertTrue(py2048.post_win(grid))
+
 if __name__ == '__main__':
     unittest.main()

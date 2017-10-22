@@ -4,6 +4,7 @@ import render
 from grid import Grid
 import ani, scorecard
 import persist
+from collections import namedtuple
 
 GAME_WIDTH = 4
 GAME_HEIGHT = 4
@@ -117,24 +118,25 @@ class Score:
         self.hiscore = hiscore
         self.diff = 0
 
-def get_practical_state(grid):
+def post_win(grid):
     for triple in grid.triples:
         if triple.v and triple.v.power >= 11:
-            return 1
+            return True
+    return False
+
+def moves_possible(grid):
     for triple in grid.triples:
         if triple.v == None:
-            return 0
+            return True
     
     for row in grid.rows:
         for i in range(len(row) - 1):
             if row[i] == row[i+1]:
-                return 0
+                return True
     for col in grid.cols:
         for i in range(len(col) - 1):
             if col[i] == col[i+1]:
-                return 0
-    return -1
-
+                return True
 
 class Game:
     def __init__(self, per):
@@ -142,8 +144,9 @@ class Game:
         self.debug = False
         self.inspect = ani.Coord(0, 0)
         self.animationrate = .009
-
         self.readargs(t)
+
+        self.grid = Grid(x=GAME_WIDTH, y=GAME_HEIGHT)
 
     def run(self, t):
         return self.main(t)
@@ -153,12 +156,11 @@ class Game:
         per = self.per
 
         score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
-        self.grid = Grid(x=GAME_WIDTH, y=GAME_HEIGHT)
         if "savegame" in per:
             for i, row in enumerate(per["savegame"]):
                 for j, cell in enumerate(row):
                     self.grid[j,i] = Cell(cell) if cell else None
-            won_already = get_practical_state(self.grid)
+            won_already = post_win(self.grid)
             if "score" in per:
                 score.score = per["score"]
         else:
@@ -181,9 +183,8 @@ class Game:
             score.diff = 0
             scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
                     score.score, score.hiscore)
-            # check practical state
-            winlose = get_practical_state(self.grid)
-            if winlose == 1 and not won_already:
+            # check if the game was won on the last turn
+            if post_win(self.grid) and not won_already:
                 won_already = True
                 k = t.popup("YOU WON!",
                         left="press c to continue", right="press q to quit",
@@ -196,7 +197,7 @@ class Game:
                     del per["score"]
                     raise EndOfGame()
 
-            elif winlose == -1:
+            if not moves_possible(self.grid):
                 t.popup("YOU LOST", right="press any key to quit",
                         bgcolor=t.c.COLOR_WHITE)
                 break
@@ -293,7 +294,7 @@ class Game:
 
             ani.play(t, self.animationrate, anims)
         per["hiscore"] = max(per["hiscore"], score.hiscore)
-        if get_practical_state(self.grid) == 0:
+        if moves_possible(self.grid):
             per["savegame"] = [
                     [c.power if c else None for c in r] for r in self.grid.rows]
             per["score"] = score.score
