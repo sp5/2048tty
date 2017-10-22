@@ -87,6 +87,24 @@ class Coord:
 class Animation:
     pass
 
+class GridBackgroundAnim(Animation):
+    def __init__(self, tl, tilesize, gridsize):
+        posx = tl.x - 1
+        posy = tl.y - 1
+
+    def render(self, t):
+        t.corner_tl(self.tl - ani.Coord(1, 1))
+        for y in range(self.gridsize.y + 1):
+            for x in range(self.gridsize.x - 1):
+                for i in range(self.tilesize.x):
+                    t.line_horiz(self.tl + (y*tilesize)*cj + (x+i)*
+# TODO FIXME XXX TODO TODO FIXME
+
+
+
+
+
+
 class TileMove(Animation):
     def __init__(self, cell, start, end, merge=False):
         self.start = start # info only

@@ -231,7 +231,8 @@ To play:
 # refresh screen
         t.go()
 # clear anims
-        anims = []
+        anims = [ani.GridBackgroundAnim(tl, timesiz, ani.Coord(GAME_WIDTH,
+            GAME_HEIGHT)]
 # get & process input
         tx = t.getch()
     # movement
