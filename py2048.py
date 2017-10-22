@@ -83,6 +83,7 @@ class WrapperRev:
     def __len__(self):
         return len(self.l)
 
+# FIXME
 def pushrow(r, cbase, cstep, anims, score):
     new = []
     previously_combined = False
@@ -134,14 +135,179 @@ def get_practical_state(grid):
                 return 0
     return -1
 
-def main(t, per):
-    animationrate = .009
-    for arg in sys.argv:
-        if arg in ['-h', '--help']:
-            t.done()
-            import blessings
-            t = blessings.Terminal()
-            print("""{b}2048{n}
+
+class Game:
+    def __init__(self, per):
+        self.per = per
+        self.debug = False
+        self.inspect = ani.Coord(0, 0)
+        self.animationrate = .009
+
+        self.readargs(t)
+
+    def run(self, t):
+        return self.main(t)
+
+
+    def main(self, t):
+        per = self.per
+
+        score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
+        self.grid = Grid(x=GAME_WIDTH, y=GAME_HEIGHT)
+        if "savegame" in per:
+            for i, row in enumerate(per["savegame"]):
+                for j, cell in enumerate(row):
+                    self.grid[j,i] = Cell(cell) if cell else None
+            won_already = get_practical_state(self.grid)
+            if "score" in per:
+                score.score = per["score"]
+        else:
+            addrand(self.grid, [])
+            addrand(self.grid, [])
+            won_already = False
+        tx = '_'
+        tilesiz = ani.Coord(7, 4)
+        stepx = tilesiz * ani.ci
+        stepy = tilesiz * ani.cj
+        tl = ani.Coord(2, 2)
+        anims = None
+        while not tx.startswith("q"):
+            t.clear()
+            # main grid
+            for trip in self.grid.triples:
+                if trip.v:
+                    trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
+            # score card
+            score.diff = 0
+            scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
+                    score.score, score.hiscore)
+            # check practical state
+            winlose = get_practical_state(self.grid)
+            if winlose == 1 and not won_already:
+                won_already = True
+                k = t.popup("YOU WON!",
+                        left="press c to continue", right="press q to quit",
+                        accept="cq")
+                if k == 'c':
+                    continue
+                elif k == 'q':
+                    per["hiscore"] = max(per["hiscore"], score.hiscore)
+                    del per["savegame"]
+                    del per["score"]
+                    raise EndOfGame()
+
+            elif winlose == -1:
+                t.popup("YOU LOST", right="press any key to quit",
+                        bgcolor=t.c.COLOR_WHITE)
+                break
+            # debug
+            if self.debug:
+                for i, row in enumerate(self.grid.rows):
+                    t.write(repr(row), at=ani.Coord(30, 2+i))
+                for i, anim in enumerate(anims):
+                    t.write(repr(anim), at=ani.Coord(30,
+                        3 + len(self.grid.rows) + i))
+                ic = tl + tilesiz * self.inspect
+                t.write('#', at=ic, c=t.red)
+                t.write(repr(ic), at=ani.Coord(30,
+                    3 + len(self.grid.rows) + len(anims)))
+
+            # refresh screen
+            t.go()
+            # clear anims
+            anims = []
+            # get & process input
+            tx = t.getch()
+            # movement
+            if tx.startswith('h'):
+                ok = []
+                for i, row in enumerate(self.grid.rows):
+                    ok.append(pushrow(row, tl + stepy * i, stepx, anims, score))
+                if any(ok): addrand(self.grid, anims)
+            elif tx.startswith('l'):
+                ok = []
+                for i, row in enumerate(self.grid.rows):
+                    ok.append(pushrow(
+                                WrapperRev(row),
+                                tl + stepy*i + stepx*len(self.grid.rows) -
+                                    stepx,
+                                -stepx, anims, score))
+                if any(ok): addrand(self.grid, anims)
+            elif tx.startswith('k'):
+                ok = []
+                for i, col in enumerate(self.grid.cols):
+                    ok.append(pushrow(col, tl + stepx * i, stepy, anims, score))
+                if any(ok): addrand(self.grid, anims)
+            elif tx.startswith('j'):
+                ok = []
+                for i, col in enumerate(self.grid.cols):
+                    ok.append(pushrow(
+                                WrapperRev(col),
+                                tl + stepx*i + stepy*len(self.grid.cols) -
+                                    stepy,
+                                -stepy, anims, score))
+                if any(ok): addrand(self.grid, anims)
+            # quit w/o saveing
+            elif tx.startswith('x'):
+                k = t.popup(
+                        "Are you sure you want to quit and clear the board?",
+                        right="press y to confirm", bgcolor=t.c.COLOR_MAGENTA)
+                if k == 'y':
+                    del per["savegame"]
+                    del per["score"]
+                    raise EndOfGame()
+            # debug mode
+            elif tx.startswith('d'):
+                self.debug = not self.debug
+            # start pdb if things are really bad
+            elif tx.startswith('!'):
+                import pdb
+                with t.location():
+                    t.c.curs_set(1)
+                    t.c.nocbreak()
+                    t.s.keypad(False)
+                    pdb.set_trace()
+                    t.s.keypad(True)
+                    t.c.cbreak()
+                    t.c.curs_set(0)
+            elif self.debug:
+                # move location indicator
+                if tx.startswith('H'):
+                    self.inspect -= ani.ci
+                elif tx.startswith('L'):
+                    self.inspect += ani.ci
+                elif tx.startswith('K'):
+                    self.inspect -= ani.cj
+                elif tx.startswith('J'):
+                    self.inspect += ani.cj
+                elif tx.isdigit():
+                    self.grid[self.inspect.x, self.inspect.y] = Cell(int(tx))
+            score.score += score.diff
+            score.hiscore = max(score.score, score.hiscore)
+            anims.append(scorecard.ScoreCardAnim(
+                    score.diff,
+                    tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
+                    score.score, score.hiscore))
+            # don't want any suprise motions
+            t.input_flush()
+
+            ani.play(t, self.animationrate, anims)
+        per["hiscore"] = max(per["hiscore"], score.hiscore)
+        if get_practical_state(self.grid) == 0:
+            per["savegame"] = [
+                    [c.power if c else None for c in r] for r in self.grid.rows]
+            per["score"] = score.score
+        else:
+            del per["savegame"]
+            del per["score"]
+
+    def readargs(self, t):
+        for arg in sys.argv:
+            if arg in ['-h', '--help']:
+                t.done()
+                import blessings
+                t = blessings.Terminal()
+                print("""{b}2048{n}
 Implementation in python by Samuel Phillips <samuel.phillips29@gmail.com>
 Based on 2048 by Gabriele Cirulli. <gabrielecirulli.com>
 To play:
@@ -158,169 +324,24 @@ To play:
 
     The game's high score is soted in ~/.2048tty by default. You can change
     this location be setting the 2048TTY_FILE environment varible.
-    """.format(
-        b=t.bold, n=t.normal, u=t.underline, animrate=animationrate))
-            sys.exit(0)
-        elif arg.startswith('-A'):
-            animationrate = float(arg[2:])
-        elif arg.startswith('--animrate'):
-            animationrate = float(arg[len('--animrate'):])
+""".format(
+            b=t.bold, n=t.normal, u=t.underline, animrate=self.animationrate))
+                sys.exit(0)
+            elif arg.startswith('-A'):
+                self.animationrate = float(arg[2:])
+            elif arg.startswith('--animrate'):
+                self.animationrate = float(arg[len('--animrate'):])
 
-
-    debug = False
-    inspect = ani.Coord(0, 0)
-
-    score = Score(hiscore=per["hiscore"]) # Class needed because no pointers
-    grid = Grid(x=GAME_WIDTH, y=GAME_HEIGHT)
-    if "savegame" in per:
-        for i, row in enumerate(per["savegame"]):
-            for j, cell in enumerate(row):
-                grid[j,i] = Cell(cell) if cell else None
-        won_already = get_practical_state(grid)
-        if "score" in per:
-            score.score = per["score"]
-    else:
-        addrand(grid, [])
-        addrand(grid, [])
-        won_already = False
-    tx = '_'
-    tilesiz = ani.Coord(7, 4)
-    stepx = tilesiz * ani.ci
-    stepy = tilesiz * ani.cj
-    tl = ani.Coord(2, 2)
-    anims = None
-    while not tx.startswith("q"):
-        t.clear()
-# main grid
-        for trip in grid.triples:
-            if trip.v:
-                trip.v.render(t, tl + tilesiz * ani.Coord(trip.x, trip.y))
-# score card
-        score.diff = 0
-        scorecard.draw(t, tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
-                score.score, score.hiscore)
-# check practical state
-        winlose = get_practical_state(grid)
-        if winlose == 1 and not won_already:
-            won_already = True
-            k = t.popup("YOU WON!",
-                    left="press c to continue", right="press q to quit",
-                    accept="cq")
-            if k == 'c':
-                continue
-            elif k == 'q':
-                per["hiscore"] = max(per["hiscore"], score.hiscore)
-                del per["savegame"]
-                del per["score"]
-                raise EndOfGame()
-
-        elif winlose == -1:
-            t.popup("YOU LOST", right="press any key to quit",
-                    bgcolor=t.c.COLOR_WHITE)
-            break
-# debug
-        if debug:
-            for i, row in enumerate(grid.rows):
-                t.write(repr(row), at=ani.Coord(30, 2+i))
-            for i, anim in enumerate(anims):
-                t.write(repr(anim), at=ani.Coord(30, 3+len(grid.rows)+i))
-            ic = tl + tilesiz * inspect
-            t.write('#', at=ic, c=t.red)
-            t.write(repr(ic), at=ani.Coord(30, 3+len(grid.rows)+len(anims)))
-
-# refresh screen
-        t.go()
-# clear anims
-        anims = []
-# get & process input
-        tx = t.getch()
-    # movement
-        if tx.startswith('h'):
-            ok = []
-            for i, row in enumerate(grid.rows):
-                ok.append(pushrow(row, tl + stepy * i, stepx, anims, score))
-            if any(ok): addrand(grid, anims)
-        elif tx.startswith('l'):
-            ok = []
-            for i, row in enumerate(grid.rows):
-                ok.append(pushrow(
-                            WrapperRev(row),
-                            tl + stepy*i + stepx*len(grid.rows) - stepx,
-                            -stepx, anims, score))
-            if any(ok): addrand(grid, anims)
-        elif tx.startswith('k'):
-            ok = []
-            for i, col in enumerate(grid.cols):
-                ok.append(pushrow(col, tl + stepx * i, stepy, anims, score))
-            if any(ok): addrand(grid, anims)
-        elif tx.startswith('j'):
-            ok = []
-            for i, col in enumerate(grid.cols):
-                ok.append(pushrow(
-                            WrapperRev(col),
-                            tl + stepx*i + stepy*len(grid.cols) - stepy,
-                            -stepy, anims, score))
-            if any(ok): addrand(grid, anims)
-    # quit w/o saveing
-        elif tx.startswith('x'):
-            k = t.popup("Are you sure you want to quit and clear the board?",
-                    right="press y to confirm", bgcolor=t.c.COLOR_MAGENTA)
-            if k == 'y':
-                del per["savegame"]
-                del per["score"]
-                raise EndOfGame()
-    # debug mode
-        elif tx.startswith('d'):
-            debug = not debug
-    # start pdb if things are really bad
-        elif tx.startswith('!'):
-            import pdb
-            with t.location():
-                t.c.curs_set(1)
-                t.c.nocbreak()
-                t.s.keypad(False)
-                pdb.set_trace()
-                t.s.keypad(True)
-                t.c.cbreak()
-                t.c.curs_set(0)
-        elif debug:
-    # move location indicator
-            if tx.startswith('H'):
-                inspect -= ani.ci
-            elif tx.startswith('L'):
-                inspect += ani.ci
-            elif tx.startswith('K'):
-                inspect -= ani.cj
-            elif tx.startswith('J'):
-                inspect += ani.cj
-            elif tx.isdigit():
-                grid[inspect.x, inspect.y] = Cell(int(tx))
-        score.score += score.diff
-        score.hiscore = max(score.score, score.hiscore)
-        anims.append(scorecard.ScoreCardAnim(
-                score.diff,
-                tl + tilesiz * ani.ci * 4 + ani.Coord(10, 5),
-                score.score, score.hiscore))
-# don't want any suprise motions
-        t.input_flush()
-
-        ani.play(t, animationrate, anims)
-    per["hiscore"] = max(per["hiscore"], score.hiscore)
-    if get_practical_state(grid) == 0:
-        per["savegame"] = [
-                [c.power if c else None for c in r] for r in grid.rows]
-        per["score"] = score.score
-    else:
-        del per["savegame"]
-        del per["score"]
 
 if __name__ == '__main__':
     per = persist.Persister()
     t = render.Terminal()
     try:
-        main(t, per)
+        game = Game(per)
+        game.run(t)
     except EndOfGame:
         pass
     finally:
         t.done()
         per.finish()
+        print("Cleaned up")
