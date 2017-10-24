@@ -229,7 +229,7 @@ class Game:
 
         self.keybinds = DEFAULT_KEY_BINDINGS.copy()
         if "keybinds" in self.per:
-            for kbname, kbset in self.per["keybinds"]:
+            for kbname, kbset in self.per["keybinds"].items():
                 self.keybinds[kbname] = kbset
         self.update_reverse_keybinds()
 
