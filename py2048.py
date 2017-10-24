@@ -144,6 +144,20 @@ def moves_possible(grid):
             if col[i] == col[i+1]:
                 return True
 
+DEFAULT_KEY_BINDINGS = {
+    'h': ('h', 'KEY_LEFT'),
+    'l': ('l', 'KEY_RIGHT'),
+    'j': ('j', 'KEY_DOWN'),
+    'k': ('k', 'KEY_UP'),
+    'q': ('q', '\x1b'),
+    'x': ('x',),
+    'd': tuple(),
+    'H': ('H',),
+    'J': ('J',),
+    'K': ('K',),
+    'L': ('L',),
+}
+
 class Game:
     def __init__(self, per):
         self.per = per
@@ -157,6 +171,8 @@ class Game:
         self.stepx = self.tilesiz * ani.ci
         self.stepy = self.tilesiz * ani.cj
         self.tl = ani.Coord(2, 2)
+
+        self.init_game()
 
     def run(self, t):
         return self.main(t)
@@ -196,23 +212,43 @@ class Game:
 
         return any(ok), newscore, anims
 
-    def main(self, t):
-        per = self.per
-
-        score_local   = 0
-        score_hiscore = per["hiscore"]
-        if "savegame" in per:
-            for i, row in enumerate(per["savegame"]):
+    def init_game(self):
+        self.score   = 0
+        self.hiscore = self.per["hiscore"]
+        if "savegame" in self.per:
+            for i, row in enumerate(self.per["savegame"]):
                 for j, cell in enumerate(row):
                     self.grid[j,i] = Cell(cell) if cell else None
-            won_already = post_win(self.grid)
+            self.won_already = post_win(self.grid)
             if "score" in per:
-                score_local = per["score"]
+                self.score = self.per["score"]
         else:
             addrand(self.grid, [])
             addrand(self.grid, [])
-            won_already = False
-        tx = '_'
+            self.won_already = False
+
+        self.keybinds = DEFAULT_KEY_BINDINGS.copy()
+        if "keybinds" in self.per:
+            for kbname, kbset in self.per["keybinds"]:
+                self.keybinds[kbname] = kbset
+        self.update_reverse_keybinds()
+
+    def update_reverse_keybinds(self):
+        self.reverse_keybinds = {}
+        for kbname, kbset in self.keybinds.items():
+            for key in kbset:
+                self.reverse_keybinds[key] = kbname
+
+    def nextaction(self, t):
+        while True:
+            key = t.getch()
+            if key in self.reverse_keybinds:
+                return self.reverse_keybinds[key]
+
+    def main(self, t):
+        per = self.per
+
+        tx = '_' # tx is the current action
         anims = None
         while not tx.startswith("q"):
             t.clear()
@@ -224,17 +260,17 @@ class Game:
             # score card
             score_diff = 0
             scorecard.draw(t, self.tl + self.tilesiz * ani.ci * 4 +
-                    ani.Coord(10, 5), score_local, score_hiscore)
+                    ani.Coord(10, 5), self.score, self.hiscore)
             # check if the game was won on the last turn
-            if post_win(self.grid) and not won_already:
-                won_already = True
+            if post_win(self.grid) and not self.won_already:
+                self.won_already = True
                 k = t.popup("YOU WON!",
                         left="press c to continue", right="press q to quit",
                         accept="cq")
                 if k == 'c':
                     continue
                 elif k == 'q':
-                    per["hiscore"] = max(per["hiscore"], score_hiscore)
+                    per["hiscore"] = max(per["hiscore"], self.hiscore)
                     del per["savegame"]
                     del per["score"]
                     raise EndOfGame()
@@ -260,7 +296,7 @@ class Game:
             # clear anims
             anims = []
             # get & process input
-            tx = t.getch()
+            tx = self.nextaction(t)
             # movement
             if tx.startswith('h'):
                 ok, upscore, newanims = self.push(self.LEFT)
@@ -317,21 +353,21 @@ class Game:
                     self.inspect += ani.cj
                 elif tx.isdigit():
                     self.grid[self.inspect.x, self.inspect.y] = Cell(int(tx))
-            score_local += score_diff
-            score_hiscore = max(score_local, score_hiscore)
+            self.score += score_diff
+            self.hiscore = max(self.score, self.hiscore)
             anims.append(scorecard.ScoreCardAnim(
                     score_diff,
                     self.tl + self.tilesiz * ani.ci * 4 + ani.Coord(10, 5),
-                    score_local, score_hiscore))
+                    self.score, self.hiscore))
             # don't want any suprise motions
             t.input_flush()
 
             ani.play(t, self.animationrate, anims)
-        per["hiscore"] = max(per["hiscore"], score_hiscore)
+        per["hiscore"] = max(per["hiscore"], self.hiscore)
         if moves_possible(self.grid):
             per["savegame"] = [
                     [c.power if c else None for c in r] for r in self.grid.rows]
-            per["score"] = score_local
+            per["score"] = self.score
         else:
             del per["savegame"]
             del per["score"]
