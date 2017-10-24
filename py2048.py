@@ -156,6 +156,18 @@ DEFAULT_KEY_BINDINGS = {
     'J': ('J',),
     'K': ('K',),
     'L': ('L',),
+    '0': ('0',),
+    '1': ('1',),
+    '2': ('2',),
+    '3': ('3',),
+    '4': ('4',),
+    '5': ('5',),
+    '6': ('6',),
+    '7': ('7',),
+    '8': ('8',),
+    '9': ('9',),
+    '+': ('+',),
+    '-': ('-',),
 }
 
 class Game:
@@ -353,6 +365,12 @@ class Game:
                     self.inspect += ani.cj
                 elif tx.isdigit():
                     self.grid[self.inspect.x, self.inspect.y] = Cell(int(tx))
+                elif tx == '+':
+                    self.grid[self.inspect.x, self.inspect.y] = Cell(
+                        self.grid[self.inspect.x, self.inspect.y].power + 1)
+                elif tx == '-':
+                    self.grid[self.inspect.x, self.inspect.y] = Cell(
+                        self.grid[self.inspect.x, self.inspect.y].power - 1)
             self.score += score_diff
             self.hiscore = max(self.score, self.hiscore)
             anims.append(scorecard.ScoreCardAnim(
