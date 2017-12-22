@@ -106,7 +106,7 @@ class TileMove(Animation):
     def done(self):
         if self.curr.compare(self.end, self._step):
             if self.ismerge:
-                self.cell.power += 1
+                self.cell = self.cell.aftermerge()
             return True
         else:
             return False
