@@ -1,11 +1,26 @@
 import os.path
+from pathlib import Path
 import json
 
 class Persister:
     def __init__(self,
             persistfile=os.getenv("2048TTY_FILE",
-                default=os.path.expanduser('~/.2048tty'))):
+                default=os.path.expanduser('~/.2048tty')),
+            XDG_RUNTIME_DIR=Path(os.getenv("XDG_RUNTIME_DIR",
+                default="/tmp")),
+            root=None):
+        self.XDG_RUNTIME_DIR = XDG_RUNTIME_DIR
+        try:
+            os.mkdir(XDG_RUNTIME_DIR / "2048tty")
+        except FileExistsError:
+            pass
+
+        try:
+            self.lockf = open(XDG_RUNTIME_DIR / "2048tty" / persistfile)
+            if self.lockf:
+
         self.persistfile = persistfile
+        self.root = None
         try:
             os.utime(persistfile)
         except:
